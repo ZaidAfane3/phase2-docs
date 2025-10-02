@@ -395,6 +395,10 @@ kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRES
 kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRESQL_PASSWORD && psql -U "$POSTGRESQL_USERNAME" -c "\l"'
 ```
 
+## Backup and Data Persistency
+For PostgreSQL data, a PVC claim is attached and used by the StatefulSet. This PVC is claiming a disk on GCP storage, which has a manually attached scheduled snapshot policy.
+
+According to [gcp-compute-persistent-disk-csi-driver](https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver?tab=readme-ov-file#features-in-development) repo, support for native Kubernetes snapshot functionality for this CSI is still in development.
 ## GitOps
 All todo services has their own repos with docker images built and pushed to artifact registry using github action workflows. 
 
