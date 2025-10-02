@@ -1,4 +1,4 @@
-# Documentation for Elm Phase 2 Technical Assesment
+# Documentation for Elm Phase 2 Technical Assessment
 
 ## Repos: 
 - infra (Need Access Request): [https://github.com/ZaidAfane3/todo-infra](https://github.com/ZaidAfane3/todo-infra)
@@ -8,9 +8,9 @@
 
 
 # Infra Setup :
-The infrastructure is built with terraform in a modular using Google Cloud Servie (GCS) buckets. 
+The infrastructure is built with terraform in a modular structure utilizing Google Cloud Service (GCS) buckets for statefiles
 
-A bucket was created for the terrafrom statefile and rhw following resources are created. 
+
 
 ## vpc:
 This module creates the network to run the k8s cluster in along with it's subnets and the main firewall rules.
@@ -22,9 +22,9 @@ This module creates the network to run the k8s cluster in along with it's subnet
     - Allow k8s api server port from private cidr ips 
     - Allow the node port range
     - Allow Calico port
-    - Allow Calico Protocl
+    - Allow Calico Protocol
     - (For Testing) Allow tcp/udp/icmp on private cidr ips
-    - Allow Kublet port
+    - Allow Kubelet port
     - Allow SSH from bastion to private subnets
 
 ## k8s-unmanaged
@@ -40,7 +40,7 @@ The permissions assigned to the service account are:
     - impersonation permission
     - compute service admin
 
-The controlplane node was configured with the following start-up script and at the end created a kubedm join token with no expiration to be used for worker node 
+The controlplane node was configured with the following start-up script and at the end created a kubeadm join token with no expiration to be used for worker node 
 
 ```sh
 #!/bin/bash
@@ -70,7 +70,7 @@ sudo apt-get install -y \
     kubeadm=1.34.1-1.1 \
     kubectl=1.34.1-1.1
 
-# Hold the verions of these packages so when apt upgrade/update is run, it doesn't upgrade these packages
+# Hold the versions of these packages so when apt upgrade/update is run, it doesn't upgrade these packages
 sudo apt-mark hold kubelet kubeadm kubectl
 
 # Verify Installation 
@@ -90,7 +90,7 @@ sudo ls /opt/cni/bin
 
 containerd --version
 
-# Match cgroup driver for containerd with kublet driver
+# Match cgroup driver for containerd with kubelet driver
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
@@ -100,7 +100,7 @@ sudo systemctl enable containerd
 sudo systemctl restart containerd
 sudo systemctl status containerd
 
-## Configure Netowrking
+## Configure Networking
 # Enable IP Forwarding
 echo "net.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.d/99-kubernetes-ipforwarding.conf
 
@@ -127,9 +127,9 @@ source ~/.bashrc
 kubectl cluster-info
 ```
 ## worker-nodes
-The module creates a scalable instance group managr with auto scaling. 
+The module creates a scalable instance group manager with auto scaling. 
 
-The worker nodes will be created from a an instance template that uses a custom built image, with the following configuraton, and the start-up script in terraform will run the kubeadm join:  
+The worker nodes will be created from a an instance template that uses a custom built image, with the following configuration, and the start-up script in terraform will run the kubeadm join:  
 ```shell
 #!/bin/bash
 sudo swapoff -a
@@ -158,7 +158,7 @@ sudo apt-get install -y \
     kubeadm=1.34.1-1.1 \
     kubectl=1.34.1-1.1
 
-# Hold the verions of these packages so when apt upgrade/update is run, it doesn't upgrade these packages
+# Hold the versions of these packages so when apt upgrade/update is run, it doesn't upgrade these packages
 sudo apt-mark hold kubelet kubeadm kubectl
 
 # Verify Installation 
@@ -178,7 +178,7 @@ sudo ls /opt/cni/bin
 
 containerd --version
 
-# Match cgroup driver for containerd with kublet driver
+# Match cgroup driver for containerd with kubelet driver
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
@@ -188,7 +188,7 @@ sudo systemctl enable containerd
 sudo systemctl restart containerd
 sudo systemctl status containerd
 
-## Configure Netowrking
+## Configure Networking
 # Enable IP Forwarding
 echo "net.ipv4.ip_forward = 1" | sudo tee /etc/sysctl.d/99-kubernetes-ipforwarding.conf
 
@@ -200,12 +200,12 @@ sudo sysctl net.ipv4.ip_forward
 ```
 
 ## bastion-host
-The module create a bastion host with static ip configured to be accessed through ssh with fail2ban and restricted ssh access. 
+The module creates a bastion host with static ip configured to be accessed through ssh with fail2ban and restricted ssh access. 
 
 
 
 # Kubernetes Cluster
-The service account wuith all the permissions mentioned before is attached to all k8s nodes (controlplane and workers)
+The service account with all the permissions mentioned before is attached to all k8s nodes (controlplane and workers)
 
 ## Cluster Networking
 Once the cluster is started, the node are not ready because the Container Network Interface (CNI) is not deployed by default so Calico was installed to start network communication inside the cluster. 
@@ -214,7 +214,7 @@ k apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.3/manife
 ```
 
 ## Storage Provisioning
-To enable the workload to use privisoned storage on gcp through pv/pvc we need a Container Storage Interface (CSI) to be able to communicate with underlaying gcp apis. 
+To enable the workload to use provisioned storage on gcp through pv/pvc we need a Container Storage Interface (CSI) to be able to communicate with underlying gcp apis. 
 
 - Github Repo: [https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver](https://github.com/kubernetes-sigs/gcp-compute-persistent-disk-csi-driver)
 
@@ -226,12 +226,12 @@ kubectl delete -k https://github.com/kubernetes-sigs/gcp-compute-persistent-disk
 
 after applying the csi driver there were a couple of issues and I had to edit the controller deployment/daemonset with the following: 
 1. Add tolerations for controlplane node
-2. remove `--enable-multitenancy` from deployment and daemon-set because it was causing an issue because it has to do smth with GKE. 
+2. remove `--enable-multitenancy` from deployment and daemon-set because it was causing an issue because it has to do something with GKE. 
 
 Finally, the Storage Class is deployed using the manifest found [`k8s/cluster/storageclass.yaml`](https://github.com/ZaidAfane3/todo-infra/blob/main/k8s/cluster/storageclass.yaml).
 
 ## Image Pull Secret
-To create the secret a key in json format is needed to authenticate conatinerd with gcp artifcate registry
+To create the secret a key in json format is needed to authenticate containerd with gcp artifact registry
 
 ```sh
 gcloud iam service-accounts keys create key.json \
@@ -264,7 +264,7 @@ Deployed using the manifest found [`k8s/cluster/metrics-server.yaml`](https://gi
 
 
 ## Nginx Ingress
-nginx ingress controller when setup it created a loadbalancer service resources but in unamnaged k8s loadbalancer service act as nodeport
+nginx ingress controller when setup it created a loadbalancer service resources but in unmanaged k8s loadbalancer service act as nodeport
 
 used the script to deploy nginx ingress controller
 ```sh
@@ -323,7 +323,7 @@ certbot certonly \
 for the ALB health check, a health check app was deployed using the manifest [`k8s/cluster/health-check.yaml`](https://github.com/ZaidAfane3/todo-infra/blob/main/k8s/cluster/health-check.yaml)
 
 ## Monitoring 
-Deployed using kube-promethues-stack helm 
+Deployed using kube-prometheus-stack helm 
 
 - [Helm Chart on ArtifactHub](https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack)
 - [GitHub Repository](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
@@ -367,13 +367,13 @@ kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath="{.data.pas
 
 Then expose argocd through the ingress in `infra-repo/k8s/cluster/argocd/ingress.yaml`.
 
-For argocd to access the infra gitops repo, ssh-key authentication was used and added ti argocd ui, then pointed each application to the path inside the infra repo. 
+For argocd to access the infra gitops repo, ssh-key authentication was used and added to argocd ui, then pointed each application to the path inside the infra repo. 
 
 
 # Microservice Architecture
-The to-do app web app is a simple 4 services
+The `to-do app` web app is a simple 4 services
 1. auth service: has it's own database and responsible for logging in/out and check if user is logged in through a cookie.
-2. be service: managing the logig for a todo app and communicates with an OpenAI Compatible API for some fancy LLM integration, it talk also with the auth service through a ClusterIP service to check if user is authenticated, be has it's own database
+2. be service: managing the logic for a todo app and communicates with an OpenAI Compatible API for some fancy LLM integration, it talks also with the auth service through a ClusterIP service to check if user is authenticated, be has it's own database
 3. frontend service: pointing to /api/todo and /auth 
 4. The postgresql running with be and auth schema. 
 
@@ -386,7 +386,7 @@ kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRES
 
 kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRESQL_PASSWORD && psql -U "$POSTGRESQL_USERNAME" -c "CREATE DATABASE todo_db;"' 
 
-# Grant Priviliges
+# Grant Privileges
 kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRESQL_PASSWORD && psql -U "$POSTGRESQL_USERNAME" -c "GRANT ALL PRIVILEGES ON DATABASE auth_db TO $POSTGRESQL_USERNAME;"'
 
 kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRESQL_PASSWORD && psql -U "$POSTGRESQL_USERNAME" -c "GRANT ALL PRIVILEGES ON DATABASE todo_db TO $POSTGRESQL_USERNAME;"'
@@ -396,9 +396,9 @@ kubectl exec postgres-0 -n microservices -- bash -c 'export PGPASSWORD=$POSTGRES
 ```
 
 ## GitOps
-All todo services has their own repos with docker images built and pushed to artifcate registry using github action workflows. 
+All todo services has their own repos with docker images built and pushed to artifact registry using github action workflows. 
 
-The deployment files using kustomize are found for each service under the infra repo at [`8s/todo`](https://github.com/ZaidAfane3/todo-infra/tree/main/k8s/todo)
+The deployment files using kustomize are found for each service under the infra repo at [`k8s/todo`](https://github.com/ZaidAfane3/todo-infra/tree/main/k8s/todo)
 
 ### CI
 The CI will build the image and scan it with trivy when a new code is pushed to dev
@@ -407,19 +407,19 @@ The CI will build the image and scan it with trivy when a new code is pushed to 
 CD will run on two stages `build-and-push` and `deploy`. 
 
 On `build-and-push` the image is being built, tagged and pushed to the registry 
-On `deploy` the gitops repo is checkout out and the deployment file is updated with the new tag and the changes are commited for argocd to pick it up and deploy it.
+On `deploy` the gitops repo is checked out and the deployment file is updated with the new tag and the changes are committed for argocd to pick it up and deploy it.
 
 ## Horizontal Pod Autoscale (HPA) 
 Each one of the 3 services is configured with HPA in the same gitops repo. 
 
 
 # Manual
-These resources were created mnaually 
+These resources were created manually 
 - Firewalls: 
     - Allow alb health checks
     - Allow http/https to the loadbalancer
 - Loadbalancer
-- Artifcat Registry
+- Artifact Registry
 
 # How To 
 ## Generate Service Account Json Creds for Github Action
@@ -440,7 +440,7 @@ jq -c . github-actions-key.json > github-actions-key.json
 ## Access the Node (Bypass Bastion)
 ```
 ### Access the Node
-cat ~/.ssh/keys/gcp-perosnal/google_compute_engine.pub | pbcopy
+cat ~/.ssh/keys/gcp-personal/google_compute_engine.pub | pbcopy
 
 ## Whitelist my public IP address on the firewall
 MY_PUBLIC_IP=$(curl -s https://api.ipify.org)
@@ -452,8 +452,8 @@ gcloud compute firewall-rules create allow-ssh-from-zaid \
 
 ## SSH into the node
 IP_ADDRESS=$(gcloud compute instances describe controlplane-node --zone=us-central1-a --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-ssh -i ~/.ssh/keys/gcp-perosnal/google_compute_engine zafaneh@$IP_ADDRESS -v
+ssh -i ~/.ssh/keys/gcp-personal/google_compute_engine zafaneh@$IP_ADDRESS -v
 ```
 
 
-> Note: AI will be connecting to Ollam Running on my laptop through a cloudflared tunnel, running on vm is expensive.  
+> Note: AI will be connecting to Ollama Running on my laptop through a cloudflared tunnel, running on vm is expensive.  
